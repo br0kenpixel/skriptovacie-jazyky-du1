@@ -1,10 +1,12 @@
 <?php
 
 namespace ukf;
+include_once "csvdecode.php";
+use br0kenpixel\CsvDecoder;
 
 class Menu
 {
-    private $sourceFileName = "source/headerMenu.json";
+    private $sourceFileName = "source/headerMenu.csv";
 
     public function getMenuData(string $type): array
     {
@@ -13,15 +15,36 @@ class Menu
         if ($this->validateMenuType($type)) {
             if ($type === "header") {
                 try {
-                    $menuJsonFile = file_get_contents($this->sourceFileName);
-                    $menu = json_decode($menuJsonFile, true);
+                    $decoder = new CsvDecoder();
+                    $decoder->parse_file($this->sourceFileName);
+                    
+                    $menu = [];
+                    while($decoder->available()) {
+                        $entry = $decoder->fetchOne();
+                        array_push($menu, $entry);
+                    }
+                    $menu = $this->parseMenu($menu);
                 } catch (\Exception $exception) {
-                    //echo $exception->getMessage();
+                    echo $exception->getMessage();
                 }
             }
         }
 
         return $menu;
+    }
+
+    private function parseMenu(array $menu) {
+        $new_menu = [];
+
+        for($i = 0; $i < count($menu); $i++) {
+            $page = [];
+            $page["name"] = $menu[$i]["name"];
+            $page["path"] = $menu[$i]["path"];
+
+
+            $new_menu[$menu[$i]["id"]] = $page;
+        }
+        return $new_menu;
     }
 
     public function printMenu(array $menu)
